@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>關西親子旅程 CODEx（每日分頁｜Google Maps 連動）</title>
+  <meta name="theme-color" content="#0b0f1a" />
+  <style>
+    :root{
+      --bg:#0b0f1a; --card:#121a2b; --card2:#0f1626; --text:#e8eefc;
+      --sub:#aab6d6; --muted:#7d8ab3; --line:#24314f;
+      --accent:#5aa2ff; --accent2:#79d2c6; --warn:#ffcc66;
+      --btn:#1b2a47; --btn2:#15213a; --ok:#59d38c;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: -apple-system, BlinkMacSystemFont, "PingFang TC",
+      "Microsoft JhengHei", "Noto Sans TC", Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:linear-gradient(180deg, #0b0f1a, #070a12);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(11,15,26,.9);
+      backdrop-filter:saturate(140%) blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:14px 14px 24px}
+    h1{font-size:18px; margin:4px 0 2px}
+    .meta{color:var(--sub); font-size:13px; line-height:1.4}
+    .tabs{
+      display:flex; gap:8px; overflow:auto; padding:10px 14px 14px;
+      border-top:1px solid rgba(255,255,255,0.04);
+    }
+    .tab{
+      flex:0 0 auto;
+      border:1px solid var(--line);
+      background:var(--btn2);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:13px;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .tab[aria-selected="true"]{
+      background:linear-gradient(180deg, #1b2a47, #121a2b);
+      border-color:rgba(90,162,255,.6);
+      box-shadow: 0 0 0 2px rgba(90,162,255,.15) inset;
+    }
+    main{padding:0 14px 24px}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    @media(min-width:860px){
+      .grid{grid-template-columns: 1.1fr .9fr}
+    }
+    .card{
+      background:linear-gradient(180deg, var(--card), var(--card2));
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+    .card h2{font-size:15px; margin:0 0 8px}
+    .card h3{font-size:13px; margin:14px 0 6px; color:var(--sub)}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--line); background:rgba(255,255,255,.03);
+      color:var(--sub); font-size:12px;
+    }
+    .row{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0}
+    .kvs{display:grid; grid-template-columns: 110px 1fr; gap:8px; font-size:13px; color:var(--sub)}
+    .kvs div:nth-child(odd){color:var(--muted)}
+    .list{margin:8px 0 0; padding:0; list-style:none}
+    .list li{
+      padding:10px 10px;
+      border:1px solid rgba(255,255,255,0.06);
+      background:rgba(0,0,0,0.12);
+      border-radius:12px;
+      margin-bottom:10px;
+    }
+    .list .title{font-weight:650; font-size:13px; margin-bottom:6px}
+    .list .desc{color:var(--sub); font-size:13px; line-height:1.4}
+    .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    a.btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px;
+      padding:10px 12px;
+      background:var(--btn);
+      border:1px solid var(--line);
+      border-radius:12px;
+      color:var(--text);
+      text-decoration:none;
+      font-size:13px;
+    }
+    a.btn:hover{border-color:rgba(90,162,255,.6)}
+    .btn.primary{background:linear-gradient(180deg, #1f3a66, #182a4b); border-color:rgba(90,162,255,.5)}
+    .btn.ok{background:linear-gradient(180deg, #1c3b2b, #142a21); border-color:rgba(89,211,140,.5)}
+    .btn.warn{background:linear-gradient(180deg, #3b2f1a, #2b2214); border-color:rgba(255,204,102,.5)}
+    .note{
+      font-size:12px; color:var(--sub);
+      padding:10px 12px; border-radius:12px;
+      border:1px dashed rgba(255,255,255,0.18);
+      background:rgba(255,255,255,0.03);
+      line-height:1.5;
+      margin-top:10px;
+    }
+    .footer{
+      color:var(--muted); font-size:12px; padding:14px;
+      border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .hidden{display:none !important}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>關西親子旅程 CODEx</h1>
+      <div class="meta">
+        2026/01/07–01/12｜2 大 1 小｜行李：2×29 吋 + 輕便推車｜Google Maps 一鍵導航
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="每日分頁">
+      <button class="tab" role="tab" aria-selected="true"  data-target="day0">1/7（出發前）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="day1">1/8（神戶→京都）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="day2">1/9（teamLab）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="day3">1/10（京都自由日）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="day4">1/11（京都自由日）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="day5">1/12（返程日）</button>
+      <button class="tab" role="tab" aria-selected="false" data-target="pins">固定地點</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Day 0 -->
+    <section id="day0" class="day">
+      <div class="grid">
+        <div class="card">
+          <h2>1/7（WED）台中｜出發前日</h2>
+          <div class="row">
+            <span class="pill">錨點：12:00 前送貓</span>
+            <span class="pill">目標：隔天早班零失誤</span>
+          </div>
+
+          <ul class="list">
+            <li>
+              <div class="title">10:30–11:30｜送貓入住旅館</div>
+              <div class="desc">完成交接後回家整理行李與證件，避免隔天早上手忙腳亂。</div>
+            </li>
+            <li>
+              <div class="title">晚間檢核｜必帶清單</div>
+              <div class="desc">
+                護照 / 登機資訊 / 信用卡 / 少量日幣；小孩：外套、零食、濕紙巾；行動電源（隨身）。
+              </div>
+            </li>
+          </ul>
+
+          <div class="note">
+            <b>親子移動規則（你這次配置適用）</b><br/>
+            1) 轉乘次數＝風險；能少轉就少轉。<br/>
+            2) JR 班次密 → 滿車就等下一班，不硬擠。<br/>
+            3) 入住當天「京都站→飯店」優先 Taxi/Uber（兩件 29 吋 + 推車最值得花錢的一段）。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>快速資訊</h2>
+          <div class="kvs">
+            <div>同行</div><div>2 大 1 小（3 歲）</div>
+            <div>兒童票</div><div>0–5 歲通常免票（無需買票），由大人陪同即可</div>
+            <div>行李</div><div>2×29 吋 + 輕便推車</div>
+            <div>策略</div><div>入住日 & 大行李段 → Taxi/Uber 優先</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day 1 -->
+    <section id="day1" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>1/8（THU）台中 → 神戶 → 三宮 → 麵包超人 → 京都入住</h2>
+          <div class="row">
+            <span class="pill">07:00 西屯出發</span>
+            <span class="pill">09:00 星宇起飛</span>
+            <span class="pill">三宮寄行李</span>
+          </div>
+
+          <ul class="list">
+            <li>
+              <div class="title">西屯 → 台中機場（建議 07:00 出發）</div>
+              <div class="desc">國際線建議提早抵達；保守配置：07:30 到機場。</div>
+            </li>
+            <li>
+              <div class="title">神戶機場 → 三宮（Port Liner）</div>
+              <div class="desc">約 18 分鐘。到三宮後先把 29 吋行李寄物（JR 三宮站地下置物櫃優先）。</div>
+              <div class="actions">
+                <a class="btn primary" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kobe+Airport&destination=Sannomiya+Station&travelmode=transit">導航：神戶機場→三宮（大眾運輸）</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">三宮 → 麵包超人（兩種方案）</div>
+              <div class="desc">
+                <b>省錢快：</b>JR 1 站到神戶站 + 步行。<br/>
+                <b>省力親子：</b>Taxi/Uber 直達（若下雨、孩子累、想少走路就用這個）。
+              </div>
+              <div class="actions">
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Sannomiya+Station&destination=Kobe+Anpanman+Children%27s+Museum+%26+Mall,+1-6-2+Higashikawasakicho,+Chuo-ku,+Kobe,+Hyogo+650-0044&travelmode=transit">省錢：三宮→麵包超人（大眾運輸）</a>
+                <a class="btn warn" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Sannomiya+Station&destination=Kobe+Anpanman+Children%27s+Museum+%26+Mall,+1-6-2+Higashikawasakicho,+Chuo-ku,+Kobe,+Hyogo+650-0044&travelmode=driving">省力：三宮→麵包超人（開車/Taxi）</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">三宮 → 京都（JR 新快速）</div>
+              <div class="desc">
+                約 52–55 分鐘；班次密集（通常 10–15 分鐘內有車）。<br/>
+                <b>親子策略：</b>滿車就等下一班，不硬擠；找中後段車廂較容易有位子。
+              </div>
+              <div class="actions">
+                <a class="btn primary" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Sannomiya+Station&destination=Kyoto+Station&travelmode=transit">導航：三宮→京都站（JR）</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">京都站 → 飯店（奈良物町 363）</div>
+              <div class="desc">
+                你是 2×29 吋 + 推車，<b>入住當天建議 Taxi/Uber</b>，用錢換體力與時間。<br/>
+                若想省錢：地鐵烏丸線 1 站到「四條」再步行 6–8 分鐘。
+              </div>
+              <div class="actions">
+                <a class="btn warn" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto+Station&destination=Kyoto,+Shimogyo-ku,+Naramono-cho+363&travelmode=driving">省力：京都站→飯店（開車/Taxi）</a>
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto+Station&destination=Kyoto,+Shimogyo-ku,+Naramono-cho+363&travelmode=transit">省錢：京都站→飯店（大眾運輸）</a>
+              </div>
+            </li>
+          </ul>
+
+          <div class="note">
+            <b>今日建議節奏（實務）</b><br/>
+            抵神戶出關/領行李預留 60 分；三宮寄物完成後再去麵包超人最順。<br/>
+            若出關延遲 → 麵包超人停留縮短也沒關係，重點是「不影響京都入住」。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>今日固定地點（快速打開）</h2>
+          <div class="actions">
+            <a class="btn ok" target="_blank" rel="noopener"
+               href="https://www.google.com/maps?q=Sannomiya+Station">三宮站</a>
+            <a class="btn ok" target="_blank" rel="noopener"
+               href="https://www.google.com/maps?q=Kobe+Anpanman+Children%27s+Museum+%26+Mall">神戶麵包超人博物館</a>
+            <a class="btn ok" target="_blank" rel="noopener"
+               href="https://www.google.com/maps?q=Kyoto,+Shimogyo-ku,+Naramono-cho+363">京都飯店（奈良物町 363）</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day 2 -->
+    <section id="day2" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>1/9（FRI）京都｜teamLab Biovortex Kyoto（09:00–09:30 入場）</h2>
+          <div class="row">
+            <span class="pill">目標：08:45 前到</span>
+            <span class="pill">停留：1.5–2 小時</span>
+          </div>
+
+          <ul class="list">
+            <li>
+              <div class="title">建議出發時間</div>
+              <div class="desc">07:30 起床；08:00 出門（保守配置）。</div>
+            </li>
+            <li>
+              <div class="title">飯店 → teamLab（兩種方案）</div>
+              <div class="desc">
+                <b>大眾運輸：</b>穩定、費用低（但可能轉乘/步行）。<br/>
+                <b>Taxi/Uber：</b>早上趕入場時段最省心（若小孩狀態不穩、怕遲到可用）。
+              </div>
+              <div class="actions">
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto,+Shimogyo-ku,+Naramono-cho+363&destination=teamLab+Biovortex+Kyoto,+21-5+Higashikujo+Higashiiwamotocho,+Minami+Ward,+Kyoto,+601-8006&travelmode=transit">省錢：飯店→teamLab（大眾運輸）</a>
+                <a class="btn warn" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto,+Shimogyo-ku,+Naramono-cho+363&destination=teamLab+Biovortex+Kyoto,+21-5+Higashikujo+Higashiiwamotocho,+Minami+Ward,+Kyoto,+601-8006&travelmode=driving">省心：飯店→teamLab（開車/Taxi）</a>
+              </div>
+            </li>
+          </ul>
+
+          <div class="note">
+            <b>入場管理：</b>你是 09:00–09:30 時段，建議 08:40–08:50 抵達現場附近。<br/>
+            <b>若接近遲到：</b>直接改 Taxi/Uber（用時間換確定性）。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>teamLab 地點（你提供的連結）</h2>
+          <div class="actions">
+            <a class="btn primary" target="_blank" rel="noopener"
+               href="https://maps.app.goo.gl/cZiKRMcHun6Z26Ta8?g_st=ic">開啟：teamLab Google Maps</a>
+            <a class="btn ok" target="_blank" rel="noopener"
+               href="https://www.google.com/maps?q=teamLab+Biovortex+Kyoto,+21-5+Higashikujo+Higashiiwamotocho,+Minami+Ward,+Kyoto,+601-8006">備用：teamLab 文字定位</a>
+          </div>
+          <div class="note">
+            若你想要「到門口精準動線」（哪個出口、哪條推車友善路線），把票券上顯示的入口/樓層資訊貼上即可。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day 3 -->
+    <section id="day3" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>1/10（SAT）京都自由日（待你決定主題）</h2>
+          <div class="row">
+            <span class="pill">親子友善</span>
+            <span class="pill">午睡彈性</span>
+            <span class="pill">室內備案</span>
+          </div>
+
+          <div class="note">
+            你只要回我「想走哪一類」，我就把 Day 3/4 排成可點導航的版本：<br/>
+            A. 經典（清水寺/祇園）｜B. 嵐山（竹林/小火車）｜C. 室內親子（鐵道博物館/水族館）｜D. 近郊（奈良/宇治）
+          </div>
+        </div>
+        <div class="card">
+          <h2>快捷：飯店定位</h2>
+          <div class="actions">
+            <a class="btn ok" target="_blank" rel="noopener"
+               href="https://www.google.com/maps?q=Kyoto,+Shimogyo-ku,+Naramono-cho+363">飯店（奈良物町 363）</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day 4 -->
+    <section id="day4" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>1/11（SUN）京都自由日（待你決定主題）</h2>
+          <div class="note">
+            若你希望「不走太多＋購物＋美食」：四條河原町/錦市場/鴨川是最穩的組合。<br/>
+            想省力：以地鐵烏丸線＋計程車短接最適合你這次配置。
+          </div>
+        </div>
+        <div class="card">
+          <h2>快捷：市中心常用點（可自行加）</h2>
+          <div class="actions">
+            <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=Nishiki+Market,+Kyoto">錦市場</a>
+            <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=Kawaramachi,+Kyoto">河原町</a>
+            <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=Kamo+River,+Kyoto">鴨川</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day 5 -->
+    <section id="day5" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>1/12（MON）返程日｜京都 → 神戶機場 → 台中（13:30 起飛）</h2>
+          <div class="row">
+            <span class="pill">建議 08:30 出發</span>
+            <span class="pill">目標 10:30 到機場</span>
+          </div>
+
+          <ul class="list">
+            <li>
+              <div class="title">飯店 → 京都站（短接）</div>
+              <div class="desc">若行李整理完畢，建議 Taxi/Uber 直接到京都站，最省力。</div>
+              <div class="actions">
+                <a class="btn warn" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto,+Shimogyo-ku,+Naramono-cho+363&destination=Kyoto+Station&travelmode=driving">飯店→京都站（開車/Taxi）</a>
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto,+Shimogyo-ku,+Naramono-cho+363&destination=Kyoto+Station&travelmode=transit">飯店→京都站（大眾運輸）</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">京都站 → 三宮（JR）</div>
+              <div class="desc">回程仍建議 JR 主線；留足轉乘到機場的緩衝。</div>
+              <div class="actions">
+                <a class="btn primary" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Kyoto+Station&destination=Sannomiya+Station&travelmode=transit">京都站→三宮（JR）</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">三宮 → 神戶機場（Port Liner）</div>
+              <div class="desc">抵三宮後轉 Port Liner 到神戶機場。</div>
+              <div class="actions">
+                <a class="btn primary" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps/dir/?api=1&origin=Sannomiya+Station&destination=Kobe+Airport&travelmode=transit">三宮→神戶機場（大眾運輸）</a>
+              </div>
+            </li>
+          </ul>
+
+          <div class="note">
+            <b>保守配置：</b>08:30 離開飯店 → 10:30 抵達神戶機場 → 11:00 前完成報到/托運。<br/>
+            你帶兩件 29 吋，返程日也建議「能少走就少走」。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>返程錨點</h2>
+          <div class="kvs">
+            <div>航班</div><div>13:30 神戶 → 台中</div>
+            <div>機場到達</div><div>建議 10:30 前</div>
+            <div>策略</div><div>京都市內短接用 Taxi/Uber；主線用 JR/Port Liner</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pins -->
+    <section id="pins" class="day hidden">
+      <div class="grid">
+        <div class="card">
+          <h2>固定地點（常用 Pins）</h2>
+          <ul class="list">
+            <li>
+              <div class="title">京都飯店：奈良物町 363</div>
+              <div class="desc mono">Kyoto, Shimogyo-ku, Naramono-cho 363</div>
+              <div class="actions">
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps?q=Kyoto,+Shimogyo-ku,+Naramono-cho+363">打開地點</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">teamLab Biovortex Kyoto（你提供）</div>
+              <div class="desc mono">teamLab Biovortex Kyoto</div>
+              <div class="actions">
+                <a class="btn primary" target="_blank" rel="noopener"
+                   href="https://maps.app.goo.gl/cZiKRMcHun6Z26Ta8?g_st=ic">開啟 Google Maps</a>
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps?q=teamLab+Biovortex+Kyoto,+21-5+Higashikujo+Higashiiwamotocho,+Minami+Ward,+Kyoto,+601-8006">備用文字定位</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">神戶麵包超人博物館</div>
+              <div class="desc mono">Kobe Anpanman Children’s Museum & Mall</div>
+              <div class="actions">
+                <a class="btn ok" target="_blank" rel="noopener"
+                   href="https://www.google.com/maps?q=Kobe+Anpanman+Children%27s+Museum+%26+Mall">打開地點</a>
+              </div>
+            </li>
+            <li>
+              <div class="title">三宮站 / 京都站（轉乘核心）</div>
+              <div class="actions">
+                <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=Sannomiya+Station">三宮站</a>
+                <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps?q=Kyoto+Station">京都站</a>
+              </div>
+            </li>
+          </ul>
+
+          <div class="note">
+            <b>iPhone 使用方式</b><br/>
+            1) 存成 <span class="mono">kansai_codex.html</span><br/>
+            2) 用「檔案」App 打開即可；或丟到 iCloud/Google Drive 方便跨裝置。<br/>
+            3) 點任何「導航」按鈕 → 會直接打開 Google Maps App（若已安裝）。
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Day 3 / Day 4 可擴充</h2>
+          <div class="note">
+            你只要指定想走的主題（經典/嵐山/室內親子/近郊），我就把 Day 3/4 做成同樣「一鍵導航」版本。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer wrap">
+      <div>版本：v1.0｜重點：可落地、可點開導航、親子省力優先（2×29 吋 + 推車）。</div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const days = Array.from(document.querySelectorAll('.day'));
+
+      function show(id){
+        days.forEach(s => s.classList.toggle('hidden', s.id !== id));
+        tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.target === id ? 'true' : 'false'));
+        window.scrollTo({top: 0, behavior: 'smooth'});
+      }
+
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => show(btn.dataset.target));
+      });
+
+      // 支援 URL hash 直接開某天，例如：kansai_codex.html#day2
+      if (location.hash) {
+        const id = location.hash.replace('#','');
+        if (document.getElementById(id)) show(id);
+      }
+
+      // 切頁時同步 hash，方便分享/收藏
+      tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.target;
+          history.replaceState(null, '', '#' + id);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
