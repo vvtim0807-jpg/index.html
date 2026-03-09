@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIX Risk Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg0:#070A10;
+      --bg1:#0B1020;
+      --card:#0F1A3A;
+      --card2:#0E1530;
+      --text:#EAF0FF;
+      --muted:#9FB2FF;
+      --accent:#8B5CF6;
+      --accent2:#22D3EE;
+      --shadow: rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 600px at 10% 10%, rgba(139,92,246,.28), transparent 60%),
+        radial-gradient(700px 500px at 80% 20%, rgba(34,211,238,.22), transparent 55%),
+        radial-gradient(1000px 700px at 40% 90%, rgba(99,102,241,.18), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:26px 16px 60px}
+    .topbar{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;flex-direction:column;gap:6px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo .dot{
+      width:38px;height:38px;border-radius:14px;
+      background:
+        linear-gradient(135deg, rgba(139,92,246,.95), rgba(34,211,238,.95));
+      box-shadow: 0 12px 30px rgba(139,92,246,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo .dot:after{
+      content:"";
+      position:absolute;inset:-40%;
+      background: conic-gradient(from 90deg, rgba(255,255,255,.35), transparent, rgba(255,255,255,.1), transparent);
+      animation:spin 3.5s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .sub{color:var(--muted);margin:0;font-size:12.5px}
+    .hero{
+      flex:0 0 auto;
+      display:grid;
+      justify-items:end;
+      gap:6px;
+    }
+    .hero .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(15,26,58,.55);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
+      box-shadow:0 14px 40px var(--shadow);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .hero .pill{
+      padding:14px 16px;
+      border-radius:14px;
+      background: linear-gradient(135deg, rgba(139,92,246,.35), rgba(34,211,238,.25));
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      display:flex;flex-direction:column;align-items:flex-end;
+    }
+    .hero .pill .label{color:rgba(234,240,255,.75);font-size:12px}
+    .hero .pill .value{font-weight:700;font-size:26px;line-height:1.12}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    .panel{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(15,26,58,.62), rgba(14,21,48,.62));
+      box-shadow:0 18px 55px var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow:hidden;
+    }
+    .panel .head{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;
+    }
+    .panel .head .title{font-weight:650}
+    .panel .head .hint{color:var(--muted);font-size:12px}
+
+    .panel .body{padding:14px 16px}
+    .controls{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+    }
+    .field{display:flex;flex-direction:column;gap:6px;font-size:12px}
+    .field label{color:rgba(234,240,255,.82);display:flex;justify-content:space-between}
+    .field input, .field select{
+      width:100%;
+      background: rgba(7,10,16,.55);
+      border:1px solid rgba(255,255,255,.09);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 10px;
+      outline:none;
+    }
+    .field input[type=range]{padding:0}
+    .field small{color:var(--muted)}
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    .kpi{
+      background: linear-gradient(180deg, rgba(10,16,32,.62), rgba(8,13,28,.62));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:12px 12px;
+    }
+    .kpi .k1{color:var(--muted);font-size:12px}
+    .kpi .k2{font-weight:750;font-size:20px;margin-top:4px}
+
+    .needleWrap{display:flex;justify-content:center;align-items:center;margin-top:10px}
+    .gaugeLabel{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:4px}
+
+    .barRow{margin-top:14px}
+    .barRow .btitle{color:var(--muted);font-size:12px;margin-bottom:6px}
+    .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+    .bar>div{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent), var(--accent2));width:0%}
+
+    .table{margin-top:14px;border-collapse:collapse;width:100%;overflow:hidden;border-radius:14px}
+    .table th,.table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+    .table th{color:var(--muted);font-weight:600;text-align:left}
+    .table td{color:rgba(234,240,255,.88)}
+
+    .smallNote{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45}
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+      .hero{justify-items:start;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">
+          <div class="dot" aria-hidden="true"></div>
+          <div>
+            <h1>VIX Risk & Allocation Dashboard</h1>
+            <p class="sub">快速算：w<sub>final</sub> = w<sub>max</sub> × trend score × valuation score</p>
+          </div>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="badge" id="regimeText">Regime: —</div>
+        <div class="pill">
+          <div class="label">Final max allocation</div>
+          <div class="value" id="finalPct">—%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="head">
+          <div class="title">Inputs</div>
+          <div class="hint">按右邊輸出看 w<sub>max</sub> / w<sub>final</sub></div>
+        </div>
+        <div class="body">
+          <div class="controls">
+            <div class="field">
+              <label>
+                VIX <small id="vixLbl">—</small>
+              </label>
+              <input type="range" id="vix" min="10" max="40" step="0.5" value="20" />
+            </div>
+            <div class="field">
+              <label>
+                Risk tolerance R (1σ loss) <small id="riskLbl">—</small>
+              </label>
+              <input type="range" id="risk" min="0.005" max="0.05" step="0.001" value="0.02" />
+            </div>
+            <div class="field">
+              <label>k (σ multiplier)</label>
+              <select id="k">
+                <option value="1">1σ</option>
+                <option value="1.5">1.5σ</option>
+                <option value="2">2σ</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Trend score</label>
+              <input type="number" id="trend" value="0.9" min="0" max="1" step="0.05" />
+            </div>
+            <div class="field">
+              <label>Valuation score</label>
+              <input type="number" id="val" value="0.8" min="0" max="2" step="0.05" />
+            </div>
+            <div class="field">
+              <label>Current index price S₀</label>
+              <input type="number" id="price" value="5000" min="0" step="1" />
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="k1">σ<sub>30</sub> (30-day)</div>
+              <div class="k2" id="sigma30">—%</div>
+            </div>
+            <div class="kpi">
+              <div class="k1">σ<sub>year</sub></div>
+              <div class="k2" id="sigmaYear">—%</div>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="k1">w<sub>max</sub></div>
+              <div class="k2" id="wmax">—%</div>
+            </div>
+            <div class="kpi">
+              <div class="k1">w<sub>final</sub></div>
+              <div class="k2" id="wfinal">—%</div>
+            </div>
+          </div>
+
+          <div class="needleWrap">
+            <svg id="gauge" width="260" height="130" viewBox="0 0 260 130">
+              <defs>
+                <linearGradient id="grad" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0%" stop-color="var(--accent)" />
+                  <stop offset="100%" stop-color="var(--accent2)" />
+                </linearGradient>
+              </defs>
+              <path d="M20,110 A110,110 0 0,1 240,110" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="12" stroke-linecap="round" />
+              <path id="arc" d="M20,110 A110,110 0 0,1 240,110" fill="none" stroke="url(#grad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 999" />
+              <g id="needle" transform="translate(130,110)">
+                <polygon points="-4,0 4,0 0,-80" fill="rgba(234,240,255,.95)" />
+                <circle r="8" fill="rgba(234,240,255,.25)" stroke="rgba(234,240,255,.65)" />
+              </g>
+              <text x="130" y="126" text-anchor="middle" fill="var(--muted)" font-size="11">Exposure</text>
+            </svg>
+          </div>
+          <div class="gaugeLabel"><span>0%</span><span>50%</span><span>100%</span></div>
+
+          <div class="barRow">
+            <div class="btitle">w<sub>max</sub></div>
+            <div class="bar"><div id="barWmax"></div></div>
+          </div>
+          <div class="barRow">
+            <div class="btitle">w<sub>final</sub></div>
+            <div class="bar"><div id="barWfinal"></div></div>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Output</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1σ range (kσ)</td>
+                <td id="range">—</td>
+              </tr>
+              <tr>
+                <td>w<sub>max</sub> formula</td>
+                <td>min(1, R / (k·σ<sub>30</sub>))</td>
+              </tr>
+              <tr>
+                <td>w<sub>final</sub> formula</td>
+                <td>w<sub>max</sub>·trend·valuation</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="smallNote">
+            1) 這版用 calendar-day 近似：σ<sub>30</sub> = (VIX/100)·√(30/365)<br/>
+            2) 用 1σ/1.5σ/2σ 只需調整 k；你可直接照你提的 rule-of-16 再做一版。<br/>
+            3) w<sub>final</sub> 自動 cap 到 100%。
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="head">
+          <div class="title">Reading</div>
+          <div class="hint">VIX regime 給你操作語境</div>
+        </div>
+        <div class="body">
+          <div class="kpi">
+            <div class="k1">Regime guidance</div>
+            <div class="k2" style="font-size:16px" id="regimeGuide">—</div>
+          </div>
+          <div class="smallNote">
+            建議先把 trend score 做成：上升趨勢(1.0)、盤整(0.5)、下降(0.0)。<br/>
+            Valuation score 可以用 PE/ERP z-score 做一個 0.5–1.2 的縮放。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const gaugeArc = () => document.getElementById('arc');
+    const needle = () => document.getElementById('needle');
+
+    function fmtPct(x) {
+      if (!Number.isFinite(x)) return '—';
+      return (x * 100).toFixed(1) + '%';
+    }
+
+    function regime(vix) {
+      if (vix < 15) return {name: '低波動', guide: '可偏積極（依趨勢 score 微調）'};
+      if (vix < 20) return {name: '溫和', guide: '中庸：提高風控，降低滿倉概率'};
+      if (vix < 30) return {name: '防守', guide: '防守型：縮倉、降低杠杆、避免追高'};
+      return {name: '風暴', guide: 'Risk-off：避免重倉，等待穩態回落'};
+    }
+
+    function update() {
+      const vix = parseFloat($('vix').value);
+      const R = parseFloat($('risk').value);
+      const k = parseFloat($('k').value);
+      const trend = parseFloat($('trend').value);
+      const val = parseFloat($('val').value);
+      const s0 = parseFloat($('price').value);
+
+      $('vixLbl').textContent = vix.toFixed(1);
+      $('riskLbl').textContent = (R * 100).toFixed(1) + '%';
+
+      const sigmaYear = vix / 100;
+      const sigma30 = sigmaYear * Math.sqrt(30 / 365);
+
+      let wmax = R / (k * sigma30);
+      wmax = Math.min(Math.max(0, wmax), 1);
+
+      let wfinal = wmax * trend * val;
+      wfinal = Math.min(Math.max(0, wfinal), 1);
+
+      $('sigmaYear').textContent = fmtPct(sigmaYear);
+      $('sigma30').textContent = fmtPct(sigma30);
+      $('wmax').textContent = fmtPct(wmax);
+      $('wfinal').textContent = fmtPct(wfinal);
+      $('finalPct').textContent = fmtPct(wfinal);
+
+      const { name, guide } = regime(vix);
+      $('regimeText').textContent = `Regime: ${name}`;
+      $('regimeGuide').textContent = guide;
+
+      const lo = s0 * (1 - k * sigma30);
+      const hi = s0 * (1 + k * sigma30);
+      if (Number.isFinite(lo) && Number.isFinite(hi)) {
+        $('range').textContent = `${lo.toFixed(1)} ~ ${hi.toFixed(1)}`;
+      }
+
+      $('barWmax').style.width = (wmax * 100).toFixed(1) + '%';
+      $('barWfinal').style.width = (wfinal * 100).toFixed(1) + '%';
+
+      // Gauge arc: map 0-100% to dash array
+      const p = Math.max(0, Math.min(1, wfinal));
+      const arcLen = 346; // approximate for this path; tweak if needed
+      gaugeArc().setAttribute('stroke-dasharray', `${(arcLen * p).toFixed(1)} ${arcLen}`);
+
+      // Needle: 0% = left (-90 deg), 100% = right (90 deg)
+      const deg = -90 + p * 180;
+      needle().setAttribute('transform', `translate(130,110) rotate(${deg})`);
+    }
+
+    ['vix','risk','k','trend','val','price'].forEach(id => {
+      $(id).addEventListener('input', update);
+      $(id).addEventListener('change', update);
+    });
+
+    update();
+  </script>
+</body>
+</html>
