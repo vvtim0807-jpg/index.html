@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIX Position Dashboard</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --bg-2: #0b1728;
+      --panel: rgba(15, 25, 45, 0.82);
+      --panel-strong: rgba(18, 31, 56, 0.95);
+      --border: rgba(142, 178, 255, 0.14);
+      --text: #edf3ff;
+      --muted: #9db0d3;
+      --soft: #7f93b8;
+      --accent: #7ea8ff;
+      --accent-2: #79e2ff;
+      --good: #35d39a;
+      --warn: #f6ba52;
+      --bad: #ff6f7f;
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(126,168,255,0.20), transparent 24%),
+        radial-gradient(circle at 85% 12%, rgba(121,226,255,0.14), transparent 22%),
+        radial-gradient(circle at 80% 85%, rgba(53,211,154,0.10), transparent 18%),
+        linear-gradient(180deg, var(--bg) 0%, #050c17 100%);
+      letter-spacing: 0.01em;
+    }
+
+    .shell {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .headline h1 {
+      margin: 0;
+      font-size: 36px;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .headline p {
+      margin: 10px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(126,168,255,0.10);
+      border: 1px solid rgba(126,168,255,0.18);
+      color: #cfe0ff;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .card.pad {
+      padding: 22px;
+    }
+
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card-title h2, .card-title h3 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+
+    .tiny {
+      color: var(--soft);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .fields {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field .value {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(126,168,255,0.28), rgba(121,226,255,0.30));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.8);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 4px 18px rgba(126,168,255,0.45);
+      cursor: pointer;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      background: rgba(10,17,31,0.62);
+      border: 1px solid rgba(142,178,255,0.14);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input[type="number"]:focus, select:focus {
+      border-color: rgba(126,168,255,0.45);
+      box-shadow: 0 0 0 4px rgba(126,168,255,0.12);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #081322;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border: 1px solid rgba(142,178,255,0.14);
+    }
+
+    .main {
+      display: grid;
+      gap: 20px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(126,168,255,0.16), transparent 28%),
+        radial-gradient(circle at 100% 0%, rgba(121,226,255,0.12), transparent 30%),
+        linear-gradient(180deg, rgba(17,30,53,0.98), rgba(10,20,38,0.95));
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -20% 45%;
+      height: 260px;
+      background: radial-gradient(circle, rgba(126,168,255,0.22), transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .hero-left h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+
+    .hero-left p {
+      margin: 12px 0 20px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 700px;
+      font-size: 14px;
+    }
+
+    .formula {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(142,178,255,0.16);
+      color: #dce7ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero-right {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .regime-box {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(8,15,29,0.45);
+      border: 1px solid rgba(142,178,255,0.12);
+    }
+
+    .regime-label {
+      color: var(--soft);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .regime-value {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .regime-desc {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 16px;
+    }
+
+    .metric {
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--panel-strong);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      min-height: 126px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .metric .value {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin: 10px 0;
+    }
+
+    .metric .delta {
+      font-size: 12px;
+      color: var(--soft);
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+    }
+
+    .gauge-wrap {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .gauge-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .gauge {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      position: relative;
+      background: conic-gradient(var(--good) 0deg, var(--warn) 180deg, var(--bad) 360deg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.35);
+    }
+
+    .gauge::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #0b1728, #08111f);
+      border: 1px solid rgba(142,178,255,0.10);
+    }
+
+    .needle {
+      position: absolute;
+      width: 4px;
+      height: 78px;
+      background: linear-gradient(180deg, #ffffff, #a5bfff);
+      border-radius: 999px;
+      bottom: 50%;
+      left: calc(50% - 2px);
+      transform-origin: bottom center;
+      transform: rotate(-90deg);
+      box-shadow: 0 0 18px rgba(255,255,255,0.18);
+      z-index: 2;
+    }
+
+    .gauge-center {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 0 6px rgba(126,168,255,0.12);
+      z-index: 3;
+    }
+
+    .gauge-text {
+      position: relative;
+      z-index: 4;
+      text-align: center;
+    }
+
+    .gauge-text .big {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .gauge-text .small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .bands {
+      display: grid;
+      gap: 12px;
+    }
+
+    .band {
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(142,178,255,0.10);
+    }
+
+    .band-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .band-top strong { font-size: 14px; }
+    .band p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .bars {
+      display: grid;
+      gap: 16px;
+    }
+
+    .bar-block .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .track {
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(142,178,255,0.10);
+    }
+
+    .fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      transition: width 0.3s ease;
+    }
+
+    .fill.blue { background: linear-gradient(90deg, #6f97ff, #79e2ff); }
+    .fill.green { background: linear-gradient(90deg, #35d39a, #7ef5ca); }
+    .fill.gold { background: linear-gradient(90deg, #f6ba52, #ffe08a); }
+
+    .table-card table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .table-card th, .table-card td {
+      padding: 14px 10px;
+      border-bottom: 1px solid rgba(142,178,255,0.08);
+      text-align: right;
+    }
+
+    .table-card th:first-child, .table-card td:first-child { text-align: left; }
+    .table-card th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      color: var(--soft);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 14px rgba(121,226,255,0.65);
+      display: inline-block;
+    }
+
+    @media (max-width: 1180px) {
+      .layout, .bottom-grid, .hero-grid, .gauge-wrap { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .shell { padding: 18px; }
+      .topbar { flex-direction: column; }
+      .metrics { grid-template-columns: 1fr; }
+      .headline h1 { font-size: 30px; }
+      .metric .value { font-size: 28px; }
+      .btn-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="headline">
+        <h1>VIX Position Sizing Dashboard</h1>
+        <p>
+          以 VIX 作為市場風險代理變數，將年化隱含波動轉成 30 天風險，再依照你的資金容忍度、趨勢強度與估值條件，輸出最大倉位與最終建議曝險。適合拿來做 SPY / QQQ / 指數型資產的風控底座。
+        </p>
+      </div>
+      <div class="top-actions">
+        <div class="chip"><span class="status-dot"></span> Live Calculator</div>
+        <div class="chip">30D Horizon</div>
+        <div class="chip">Volatility-Based Risk</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="stack">
+        <section class="card pad">
+          <div class="card-title">
+            <h2>參數設定</h2>
+            <div class="tiny">即時調整並刷新整體面板</div>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <label><span>VIX</span><span class="value" id="vixLabel">20</span></label>
+              <input id="vix" type="range" min="10" max="60" step="1" value="20" />
+            </div>
+
+            <div class="field">
+              <label><span>風險容忍 R</span><span class="value" id="riskLabel">2.0%</span></label>
+              <input id="risk" type="range" min="0.5" max="5.0" step="0.1" value="2.0" />
+            </div>
+
+            <div class="field">
+              <label for="sigmaK"><span>Sigma 倍數 k</span><span class="value" id="sigmaLabel">1.0σ</span></label>
+              <select id="sigmaK">
+                <option value="1">1.0σ</option>
+                <option value="1.5">1.5σ</option>
+                <option value="2">2.0σ</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label><span>Trend Score</span><span class="value" id="trendLabel">1.00</span></label>
+              <input id="trend" type="range" min="0" max="1.2" step="0.05" value="1.0" />
+            </div>
+
+            <div class="field">
+              <label><span>Valuation Score</span><span class="value" id="valuationLabel">1.00</span></label>
+              <input id="valuation" type="range" min="0.5" max="1.2" step="0.05" value="1.0" />
+            </div>
+
+            <div class="field">
+              <label for="spot"><span>當前價格 S0</span><span class="value">選填</span></label>
+              <input id="spot" type="number" min="0" step="0.01" value="500" />
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-primary" id="calcBtn">重新計算</button>
+            <button class="btn-secondary" id="resetBtn">重設</button>
+          </div>
+        </section>
+
+        <section class="card pad">
+          <div class="card-title">
+            <h3>Regime 解讀</h3>
+            <div class="tiny">依目前 VIX 區間顯示風險環境</div>
+          </div>
+          <div class="regime-box">
+            <div class="regime-label">Current Market Regime</div>
+            <div class="regime-value" id="regimeValue">Normal Risk</div>
+            <div class="regime-desc" id="regimeDesc">波動處於相對平穩區，允許正常風險承擔，但仍需服從趨勢與估值約束。</div>
+          </div>
+        </section>
+      </div>
+
+      <div class="main">
+        <section class="card hero">
+          <div class="hero-grid">
+            <div class="hero-left">
+              <h2 id="heroTitle">Suggested Exposure: 34.9%</h2>
+              <p id="heroText">
+                依目前設定，30 天風險尺度屬於中等，最大曝險建議先以風控上限為主，再由趨勢與估值分數細調。這個結果代表你目前不適合滿倉，而是應維持有條件進攻的配置。
+              </p>
+              <div class="formula" id="formulaLine">w_final = min(1, R / (k × σ30)) × Trend × Valuation</div>
+            </div>
+            <div class="hero-right">
+              <div class="regime-box">
+                <div class="regime-label">30D 1σ Price Band</div>
+                <div class="regime-value"><span id="lowerBand">471.35</span> — <span id="upperBand">528.65</span></div>
+                <div class="regime-desc">使用當前價格 S0 與 30 天波動率估算之常態風險區間。</div>
+              </div>
+              <div class="regime-box">
+                <div class="regime-label">Input Scores</div>
+                <div class="regime-value"><span id="trendBox">1.00</span> × <span id="valuationBox">1.00</span></div>
+                <div class="regime-desc">趨勢與估值分數是第二層調節器，不應推翻風控底座，只能放大或壓縮有效倉位。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="metrics">
+          <div class="metric">
+            <div class="label">30 天波動率 σ30</div>
+            <div class="value" id="sigmaOut">5.73%</div>
+            <div class="delta" id="sigmaFoot">由 VIX 年化隱含波動換算</div>
+          </div>
+          <div class="metric">
+            <div class="label">最大倉位 w_max</div>
+            <div class="value" id="wmaxOut">34.9%</div>
+            <div class="delta">僅考慮風險容忍與 sigma 帶</div>
+          </div>
+          <div class="metric">
+            <div class="label">最終倉位 w_final</div>
+            <div class="value" id="wfinalOut">34.9%</div>
+            <div class="delta">風控上限 × 趨勢 × 估值</div>
+          </div>
+          <div class="metric">
+            <div class="label">年化波動率 σyear</div>
+            <div class="value" id="sigmayearOut">20.0%</div>
+            <div class="delta">以 VIX / 100 近似</div>
+          </div>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="card pad">
+            <div class="card-title">
+              <h3>Position Gauge</h3>
+              <div class="tiny">0% 到 100% 建議曝險區間</div>
+            </div>
+            <div class="gauge-wrap">
+              <div class="gauge-box">
+                <div class="gauge">
+                  <div class="needle" id="needle"></div>
+                  <div class="gauge-center"></div>
+                  <div class="gauge-text">
+                    <div class="big" id="gaugeText">35%</div>
+                    <div class="small">Suggested Exposure</div>
+                  </div>
+                </div>
+              </div>
+              <div class="bands">
+                <div class="band">
+                  <div class="band-top"><strong>0–25%</strong><span>Defensive</span></div>
+                  <p>高波動或弱趨勢環境，以觀察、試單與嚴格資金保全為主。</p>
+                </div>
+                <div class="band">
+                  <div class="band-top"><strong>25–60%</strong><span>Selective Risk</span></div>
+                  <p>允許進攻，但需建立在趨勢結構清楚且估值未失控的前提下。</p>
+                </div>
+                <div class="band">
+                  <div class="band-top"><strong>60–100%</strong><span>High Conviction</span></div>
+                  <p>只適用於低波動、強趨勢且風險報酬顯著偏多的環境。</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card pad">
+            <div class="card-title">
+              <h3>Exposure Breakdown</h3>
+              <div class="tiny">拆解風控與分數對最終結果的貢獻</div>
+            </div>
+            <div class="bars">
+              <div class="bar-block">
+                <div class="meta"><span>Risk-Based Max Position</span><span id="barWmaxText">34.9%</span></div>
+                <div class="track"><div class="fill blue" id="barWmax"></div></div>
+              </div>
+              <div class="bar-block">
+                <div class="meta"><span>Trend Score Applied</span><span id="barTrendText">100%</span></div>
+                <div class="track"><div class="fill green" id="barTrend"></div></div>
+              </div>
+              <div class="bar-block">
+                <div class="meta"><span>Valuation Score Applied</span><span id="barValText">100%</span></div>
+                <div class="track"><div class="fill gold" id="barVal"></div></div>
+              </div>
+              <div class="bar-block">
+                <div class="meta"><span>Final Suggested Exposure</span><span id="barFinalText">34.9%</span></div>
+                <div class="track"><div class="fill blue" id="barFinal"></div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="card pad table-card">
+          <div class="card-title">
+            <h3>Calculation Detail</h3>
+            <div class="tiny">方便你接回測、倉位模型或策略面板</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>項目</th>
+                <th>數值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>VIX</td><td id="rowVix">20</td></tr>
+              <tr><td>σyear</td><td id="rowSigmaYear">20.00%</td></tr>
+              <tr><td>σ30</td><td id="rowSigma30">5.73%</td></tr>
+              <tr><td>Risk Tolerance R</td><td id="rowRisk">2.00%</td></tr>
+              <tr><td>k × sigma band</td><td id="rowK">1.0σ</td></tr>
+              <tr><td>w_max</td><td id="rowWmax">34.9%</td></tr>
+              <tr><td>Trend Score</td><td id="rowTrend">1.00</td></tr>
+              <tr><td>Valuation Score</td><td id="rowValuation">1.00</td></tr>
+              <tr><td>w_final</td><td id="rowWfinal">34.9%</td></tr>
+              <tr><td>30D 1σ Lower Band</td><td id="rowLower">471.35</td></tr>
+              <tr><td>30D 1σ Upper Band</td><td id="rowUpper">528.65</td></tr>
+            </tbody>
+          </table>
+          <div class="footer-note">
+            註：這是針對大盤波動代理值的風控儀表板。若要套用在單一高 beta 個股，建議再疊加個股實現波動或 ATR 校正，否則最終倉位通常會過大。
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function fmtPct(x, digits = 1) {
+      return `${(x * 100).toFixed(digits)}%`;
+    }
+
+    function fmtNum(x, digits = 2) {
+      return Number(x).toFixed(digits);
+    }
+
+    function clamp(x, low, high) {
+      return Math.max(low, Math.min(high, x));
+    }
+
+    function vixToSigma(vix, days = 30, annualDays = 365) {
+      const sigmaYear = vix / 100;
+      return sigmaYear * Math.sqrt(days / annualDays);
+    }
+
+    function getRegime(vix) {
+      if (vix < 15) {
+        return {
+          name: 'Low Volatility',
+          desc: '低波動 regime。若趨勢配合，可接受相對積極的風險配置，但仍不建議無條件滿倉。'
+        };
+      }
+      if (vix < 20) {
+        return {
+          name: 'Normal Risk',
+          desc: '常態風險區。適合維持標準風控框架，由趨勢與估值決定是否提高曝險。'
+        };
+      }
+      if (vix < 30) {
+        return {
+          name: 'Elevated Risk',
+          desc: '風險上升區。即使方向看對，也應優先縮倉，避免波動放大造成資金曲線回撤。'
+        };
+      }
+      return {
+        name: 'Stress / Defensive',
+        desc: '壓力區。市場可能進入事件驅動或流動性失衡階段，應以防守與等待確定性為主。'
+      };
+    }
+
+    function buildNarrative(vix, wFinal, trend, valuation) {
+      const regime = getRegime(vix).name;
+      let tone = '依目前設定，建議以風控上限為核心，避免主觀放大部位。';
+
+      if (wFinal < 0.25) {
+        tone = '目前建議偏防守，代表波動、趨勢或估值至少有一項未站在你這邊，不適合重倉。';
+      } else if (wFinal < 0.6) {
+        tone = '目前屬於可選擇性承擔風險的區間，應該聚焦高勝率 setup，而不是全面進攻。';
+      } else {
+        tone = '目前環境允許較高曝險，但前提是趨勢延續與估值條件不能突然惡化。';
+      }
+
+      return `Regime: ${regime}。${tone} Trend=${trend.toFixed(2)}，Valuation=${valuation.toFixed(2)}，因此最終建議倉位不是單看 VIX，而是風控底座與條件分數共同決定。`;
+    }
+
+    function compute() {
+      const vix = parseFloat($("vix").value);
+      const risk = parseFloat($("risk").value) / 100;
+      const k = parseFloat($("sigmaK").value);
+      const trend = parseFloat($("trend").value);
+      const valuation = parseFloat($("valuation").value);
+      const spot = parseFloat($("spot").value || "0");
+
+      const sigmaYear = vix / 100;
+      const sigma30 = vixToSigma(vix, 30, 365);
+      const wMax = Math.min(1, risk / (k * sigma30));
+      const wFinal = clamp(wMax * trend * valuation, 0, 1);
+      const lower = spot > 0 ? spot * (1 - sigma30) : null;
+      const upper = spot > 0 ? spot * (1 + sigma30) : null;
+      const regime = getRegime(vix);
+
+      $("vixLabel").textContent = vix.toFixed(0);
+      $("riskLabel").textContent = `${(risk * 100).toFixed(1)}%`;
+      $("sigmaLabel").textContent = `${k.toFixed(1)}σ`;
+      $("trendLabel").textContent = trend.toFixed(2);
+      $("valuationLabel").textContent = valuation.toFixed(2);
+
+      $("regimeValue").textContent = regime.name;
+      $("regimeDesc").textContent = regime.desc;
+
+      $("heroTitle").textContent = `Suggested Exposure: ${fmtPct(wFinal, 1)}`;
+      $("heroText").textContent = buildNarrative(vix, wFinal, trend, valuation);
+
+      $("sigmaOut").textContent = fmtPct(sigma30, 2);
+      $("wmaxOut").textContent = fmtPct(wMax, 1);
+      $("wfinalOut").textContent = fmtPct(wFinal, 1);
+      $("sigmayearOut").textContent = fmtPct(sigmaYear, 1);
+      $("sigmaFoot").textContent = `VIX ${vix.toFixed(0)} → ${fmtPct(sigmaYear, 1)} annualized`;
+
+      $("lowerBand").textContent = lower !== null ? fmtNum(lower, 2) : '—';
+      $("upperBand").textContent = upper !== null ? fmtNum(upper, 2) : '—';
+      $("trendBox").textContent = trend.toFixed(2);
+      $("valuationBox").textContent = valuation.toFixed(2);
+
+      $("gaugeText").textContent = `${(wFinal * 100).toFixed(0)}%`;
+      $("needle").style.transform = `rotate(${(-90 + 180 * wFinal).toFixed(2)}deg)`;
+
+      $("barWmax").style.width = `${wMax * 100}%`;
+      $("barTrend").style.width = `${clamp(trend / 1.2, 0, 1) * 100}%`;
+      $("barVal").style.width = `${clamp(valuation / 1.2, 0, 1) * 100}%`;
+      $("barFinal").style.width = `${wFinal * 100}%`;
+
+      $("barWmaxText").textContent = fmtPct(wMax, 1);
+      $("barTrendText").textContent = `${(trend * 100).toFixed(0)}%`;
+      $("barValText").textContent = `${(valuation * 100).toFixed(0)}%`;
+      $("barFinalText").textContent = fmtPct(wFinal, 1);
+
+      $("rowVix").textContent = vix.toFixed(0);
+      $("rowSigmaYear").textContent = fmtPct(sigmaYear, 2);
+      $("rowSigma30").textContent = fmtPct(sigma30, 2);
+      $("rowRisk").textContent = fmtPct(risk, 2);
+      $("rowK").textContent = `${k.toFixed(1)}σ`;
+      $("rowWmax").textContent = fmtPct(wMax, 1);
+      $("rowTrend").textContent = trend.toFixed(2);
+      $("rowValuation").textContent = valuation.toFixed(2);
+      $("rowWfinal").textContent = fmtPct(wFinal, 1);
+      $("rowLower").textContent = lower !== null ? fmtNum(lower, 2) : '—';
+      $("rowUpper").textContent = upper !== null ? fmtNum(upper, 2) : '—';
+    }
+
+    ["vix", "risk", "sigmaK", "trend", "valuation", "spot"].forEach(id => {
+      $(id).addEventListener('input', compute);
+      $(id).addEventListener('change', compute);
+    });
+
+    $("calcBtn").addEventListener('click', compute);
+    $("resetBtn").addEventListener('click', () => {
+      $("vix").value = 20;
+      $("risk").value = 2.0;
+      $("sigmaK").value = 1;
+      $("trend").value = 1.0;
+      $("valuation").value = 1.0;
+      $("spot").value = 500;
+      compute();
+    });
+
+    compute();
+  </script>
+</body>
+</html>
