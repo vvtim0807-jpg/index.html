@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIX Risk Dashboard</title>
+  <title>VIX Risk Dashboard V1.1</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -168,7 +168,7 @@
           <div class="dot" aria-hidden="true"></div>
           <div>
             <h1>VIX Risk & Allocation Dashboard</h1>
-            <p class="sub">快速算：w<sub>final</sub> = w<sub>max</sub> × trend score × valuation score</p>
+            <p class="sub">快速算：w<sub>final</sub> = w<sub>max</sub> × Trend score（趨勢得分） × Valuation score（估值得分）</p>
           </div>
         </div>
       </div>
@@ -197,12 +197,12 @@
             </div>
             <div class="field">
               <label>
-                Risk tolerance R (1σ loss) <small id="riskLbl">—</small>
+                Risk tolerance R (1σ loss，風險容忍) <small id="riskLbl">—</small>
               </label>
               <input type="range" id="risk" min="0.005" max="0.05" step="0.001" value="0.02" />
             </div>
             <div class="field">
-              <label>k (σ multiplier)</label>
+              <label>k (σ multiplier，σ倍數風險帶)</label>
               <select id="k">
                 <option value="1">1σ</option>
                 <option value="1.5">1.5σ</option>
@@ -210,15 +210,15 @@
               </select>
             </div>
             <div class="field">
-              <label>Trend score</label>
+              <label>Trend score（趨勢得分）</label>
               <input type="number" id="trend" value="0.9" min="0" max="1" step="0.05" />
             </div>
             <div class="field">
-              <label>Valuation score</label>
+              <label>Valuation score（估值得分）</label>
               <input type="number" id="val" value="0.8" min="0" max="2" step="0.05" />
             </div>
             <div class="field">
-              <label>Current index price S₀</label>
+              <label>Current index price S₀（指數現價）</label>
               <input type="number" id="price" value="5000" min="0" step="1" />
             </div>
           </div>
@@ -315,8 +315,8 @@
             <div class="k2" style="font-size:16px" id="regimeGuide">—</div>
           </div>
           <div class="smallNote">
-            建議先把 trend score 做成：上升趨勢(1.0)、盤整(0.5)、下降(0.0)。<br/>
-            Valuation score 可以用 PE/ERP z-score 做一個 0.5–1.2 的縮放。
+            建議先把 Trend score（趨勢得分） 做成：上升趨勢(1.0)、盤整(0.5)、下降(0.0)。<br/>
+            Valuation score（估值得分） 可以用 PE/ERP z-score 做一個 0.5–1.2 的縮放。
           </div>
         </div>
       </div>
